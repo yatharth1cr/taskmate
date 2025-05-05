@@ -1,6 +1,13 @@
 import React from "react";
 import { Users, ClipboardCheck, AlertCircle } from "lucide-react";
 
+// GET /dashboard
+// {
+//   assignedCount: 5,
+//   createdCount: 10,
+//   overdueCount: 2
+// }
+
 const iconMap = {
   "Assigned to Me": <Users className="text-orange-500 w-6 h-6" />,
   "Created by Me": <ClipboardCheck className="text-green-600 w-6 h-6" />,

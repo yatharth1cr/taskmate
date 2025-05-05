@@ -3,10 +3,16 @@ import { useFormik } from "formik";
 import * as Yup from "yup";
 import taskSVG from "/task01.svg";
 
-const inputClass = "w-full p-2 border border-[#30363d] bg-[#ededed] rounded";
+// Reusable styles
+const inputClass =
+  "w-full p-2 border border-[#30363d] bg-[#ebecf0] rounded focus:outline-none focus:ring-2 focus:ring-orange-600 text-black";
 const labelClass = "block text-sm font-medium text-white mb-1";
+const errorClass = "text-red-500 text-xs mt-1";
 
-const TaskForm = () => {
+const priorityOptions = ["Low", "Medium", "High"];
+const statusOptions = ["Pending", "In Progress", "Completed"];
+
+const TaskForm = ({ onTaskCreated }) => {
   const formik = useFormik({
     initialValues: {
       title: "",
@@ -24,17 +30,44 @@ const TaskForm = () => {
       status: Yup.string().required("Select status"),
       assignedTo: Yup.string().required("Assignee is required"),
     }),
+    onSubmit: async (values, { resetForm }) => {
+      try {
+        const res = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        });
 
-    onSubmit: (values) => {
-      console.log("Form data:", values);
+        const data = await res.json();
+
+        if (res.ok) {
+          onTaskCreated(data.task); // Add task to TaskList
+          resetForm();
+        } else {
+          alert(data.message || "Failed to create task.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Something went wrong.");
+      }
     },
   });
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 items-center justify-center min-h-screen ">
+    <div className="flex flex-col md:flex-row items-center justify-center min-h-screen px-6 py-10 gap-8 bg-[#0d1117]">
+      {/* Illustration */}
+      <div className="w-full md:w-1/2 flex justify-center mb-4 md:mb-0">
+        <img
+          src={taskSVG}
+          alt="Task Illustration"
+          className="max-w-[400px] w-full h-auto"
+        />
+      </div>
+
+      {/* Form */}
       <form
         onSubmit={formik.handleSubmit}
-        className="bg-[#161B22] border border-[#30363d] p-8 rounded-lg shadow space-y-4 w-full max-w-2xl"
+        className="bg-[#161B22] border border-[#30363d] p-6 rounded-lg w-full md:w-1/2 space-y-4 shadow-md"
       >
         {/* Title */}
         <div>
@@ -47,12 +80,10 @@ const TaskForm = () => {
             type="text"
             placeholder="Enter task title"
             className={inputClass}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.title}
+            {...formik.getFieldProps("title")}
           />
           {formik.touched.title && formik.errors.title && (
-            <div className="text-red-500 text-sm">{formik.errors.title}</div>
+            <div className={errorClass}>{formik.errors.title}</div>
           )}
         </div>
 
@@ -66,14 +97,10 @@ const TaskForm = () => {
             name="description"
             placeholder="Add more details about the task"
             className={inputClass}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.description}
+            {...formik.getFieldProps("description")}
           />
           {formik.touched.description && formik.errors.description && (
-            <div className="text-red-500 text-sm">
-              {formik.errors.description}
-            </div>
+            <div className={errorClass}>{formik.errors.description}</div>
           )}
         </div>
 
@@ -87,12 +114,10 @@ const TaskForm = () => {
             name="dueDate"
             type="date"
             className={inputClass}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.dueDate}
+            {...formik.getFieldProps("dueDate")}
           />
           {formik.touched.dueDate && formik.errors.dueDate && (
-            <div className="text-red-500 text-sm">{formik.errors.dueDate}</div>
+            <div className={errorClass}>{formik.errors.dueDate}</div>
           )}
         </div>
 
@@ -105,17 +130,17 @@ const TaskForm = () => {
             id="priority"
             name="priority"
             className={inputClass}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.priority}
+            {...formik.getFieldProps("priority")}
           >
-            <option value="">Select Priority</option>
-            <option>Low</option>
-            <option>Medium</option>
-            <option>High</option>
+            <option value="">Select priority</option>
+            {priorityOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
           </select>
           {formik.touched.priority && formik.errors.priority && (
-            <div className="text-red-500 text-sm">{formik.errors.priority}</div>
+            <div className={errorClass}>{formik.errors.priority}</div>
           )}
         </div>
 
@@ -128,55 +153,46 @@ const TaskForm = () => {
             id="status"
             name="status"
             className={inputClass}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.status}
+            {...formik.getFieldProps("status")}
           >
-            <option value="">Select Status</option>
-            <option>To Do</option>
-            <option>In Progress</option>
-            <option>Done</option>
+            <option value="">Select status</option>
+            {statusOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
           </select>
           {formik.touched.status && formik.errors.status && (
-            <div className="text-red-500 text-sm">{formik.errors.status}</div>
+            <div className={errorClass}>{formik.errors.status}</div>
           )}
         </div>
 
         {/* Assigned To */}
         <div>
           <label htmlFor="assignedTo" className={labelClass}>
-            Assign To
+            Assigned To
           </label>
           <input
             id="assignedTo"
             name="assignedTo"
             type="text"
-            placeholder="Name or Email"
+            placeholder="Enter assignee"
             className={inputClass}
-            onChange={formik.handleChange}
-            onBlur={formik.handleBlur}
-            value={formik.values.assignedTo}
+            {...formik.getFieldProps("assignedTo")}
           />
           {formik.touched.assignedTo && formik.errors.assignedTo && (
-            <div className="text-red-500 text-sm">
-              {formik.errors.assignedTo}
-            </div>
+            <div className={errorClass}>{formik.errors.assignedTo}</div>
           )}
         </div>
 
         {/* Submit Button */}
         <button
           type="submit"
-          className="w-full bg-orange-700 text-white py-2 px-4 rounded hover:bg-orange-800 transition"
+          className="w-full bg-orange-600 text-white py-2 rounded hover:bg-orange-700 transition cursor-pointer"
         >
           Create Task
         </button>
       </form>
-
-      {/* SVG Image */}
-      <div className="hidden md:block w-1/2">
-        <img src={taskSVG} alt="Task Illustration" className="w-full h-auto" />
-      </div>
     </div>
   );
 };
